@@ -26,6 +26,25 @@ function isRenderMethod(node) {
     node.key.name === 'render';
 }
 
+function extendsReactComponent(
+  path: NodePath
+) {
+  var node = path.node;
+  console.log('node', node);
+
+  // extends ReactComponent?
+  if (!node.superClass) {
+    return false;
+  }
+  var superClass = resolveToValue(path.get('superClass'));
+  console.log('superClass', superClass);
+  if (!match(superClass.node, {property: {name: 'Component'}})) {
+    return extendsReactComponent(superClass);
+  }
+  var module = resolveToModule(superClass);
+  return !!module && isReactModuleName(module);
+}
+
 /**
  * Returns `true` of the path represents a class definition which either extends
  * `React.Component` or implements a `render()` method.
@@ -44,14 +63,5 @@ export default function isReactComponentClass(
     return true;
   }
 
-  // extends ReactComponent?
-  if (!node.superClass) {
-    return false;
-  }
-  var superClass = resolveToValue(path.get('superClass'));
-  if (!match(superClass.node, {property: {name: 'Component'}})) {
-    return false;
-  }
-  var module = resolveToModule(superClass);
-  return !!module && isReactModuleName(module);
+  return extendsReactComponent(path)
 }
